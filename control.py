@@ -1,19 +1,25 @@
-from mavsdk import System
 import asyncio
+from mavsdk import System
 
-async def run():
+async def main():
     drone = System()
-    await drone.connect(system_address="udp://:14540")
+    await drone.connect(system_address="serial:///dev/ttyACM0:57600")
 
-    print("⏳ Connecting...")
+    print("Waiting for drone to connect...")
     async for state in drone.core.connection_state():
         if state.is_connected:
-            print("✅ Drone connected")
+            print("✅ Drone discovered!")
             break
 
-    # Optional: skip global position check if no GPS
-    print("🚀 Arming drone...")
-    await drone.action.arm()
-    print("✅ Drone armed!")
+    print("Waiting for global position estimate...")
+    async for health in drone.telemetry.health():
+        if health.is_global_position_ok and health.is_home_position_ok:
+            print("✅ Global position ready")
+            break
 
-asyncio.run(run())
+    print("-- Arming")
+    await drone.action.arm()
+    print("✅ Armed!")
+
+if __name__ == "__main__":
+    asyncio.run(main())
