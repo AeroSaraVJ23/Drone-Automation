@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from mavsdk import System
-from mavsdk.telemetry import Health
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
@@ -9,48 +8,59 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
 async def connect_drone(serial_port="/dev/ttyACM0", baudrate=57600) -> System:
     drone = System()
     await drone.connect(system_address=f"serial://{serial_port}:{baudrate}")
-    logging.info("Connecting to drone...")
+    logging.info("🔌 Connecting to drone...")
 
     async for state in drone.core.connection_state():
         if state.is_connected:
-            logging.info("✅ Drone connected.")
+            logging.info("✅ Drone connected successfully.")
             break
     return drone
 
-async def check_health(drone: System):
-    logging.info("Checking basic health status (ignoring GPS/RC)...")
+async def check_basic_health(drone: System):
+    logging.info("🩺 Checking basic health (gyro, accel)...")
     async for health in drone.telemetry.health():
-        # We skip GPS and RC checks
         if health.is_gyrometer_calibration_ok and health.is_accelerometer_calibration_ok:
-            logging.info("✅ Gyro and Accelerometer OK.")
+            logging.info("✅ Gyroscope and accelerometer OK.")
             break
         else:
-            logging.warning("⚠️ Waiting for sensor calibration...")
+            logging.warning("⚠️ Waiting for gyro/accel calibration...")
+            await asyncio.sleep(1)
+
+async def check_gps_health(drone: System):
+    logging.info("📡 Checking GPS lock status...")
+    async for health in drone.telemetry.health():
+        if health.is_global_position_ok and health.is_home_position_ok:
+            logging.info("✅ GPS lock acquired. Home position OK.")
+            break
+        else:
+            logging.warning("⏳ Waiting for GPS lock...")
             await asyncio.sleep(1)
 
 async def check_armable(drone: System):
-    logging.info("Waiting until drone is armable...")
-    async for is_armable in drone.telemetry.armed():
-        if not is_armable:
-            logging.info("Drone is currently disarmed and ready for arming.")
+    logging.info("✅ Checking if drone is armable...")
+    async for is_armed in drone.telemetry.armed():
+        if not is_armed:
+            logging.info("🛑 Drone is currently disarmed and ready to be armed.")
             break
         else:
             logging.warning("⚠️ Drone already armed?")
             await asyncio.sleep(1)
 
 async def arm_drone(drone: System):
-    logging.info("Sending arm command...")
+    logging.info("🚀 Sending arm command...")
     try:
         await drone.action.arm()
-        logging.info("✅ Drone armed.")
+        logging.info("✅ Drone successfully armed!")
     except Exception as e:
         logging.error(f"❌ Failed to arm drone: {e}")
 
 async def main():
     drone = await connect_drone()
-    await check_health(drone)
+    await check_basic_health(drone)
+    await check_gps_health(drone)
     await check_armable(drone)
     await arm_drone(drone)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
