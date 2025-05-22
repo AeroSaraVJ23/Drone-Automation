@@ -37,14 +37,18 @@ async def check_gps_health(drone: System):
             await asyncio.sleep(1)
 
 async def check_rc_signal(drone: System):
-    logging.info("🎮 Checking RC signal...")
-    async for health in drone.telemetry.health():
-        if health.is_rc_signal_ok:
-            logging.info("✅ RC signal detected.")
+    logging.info("🎮 Checking RC signal via RcStatus...")
+
+    async for rc_status in drone.telemetry.rc_status():
+        if rc_status.is_available:
+            logging.info(f"✅ RC signal detected. Strength: {rc_status.signal_strength_percent:.1f}%")
             break
+        elif rc_status.was_available_once:
+            logging.warning("⚠️ RC was available earlier but is not now.")
         else:
-            logging.warning("⏳ Waiting for RC signal...")
-            await asyncio.sleep(1)
+            logging.warning("⏳ No RC signal detected yet.")
+        await asyncio.sleep(1)
+
 
 async def check_armable(drone: System):
     logging.info("✅ Checking if drone is armable...")
