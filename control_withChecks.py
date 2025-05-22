@@ -36,6 +36,16 @@ async def check_gps_health(drone: System):
             logging.warning("⏳ Waiting for GPS lock...")
             await asyncio.sleep(1)
 
+async def check_rc_signal(drone: System):
+    logging.info("🎮 Checking RC signal...")
+    async for health in drone.telemetry.health():
+        if health.is_rc_signal_ok:
+            logging.info("✅ RC signal detected.")
+            break
+        else:
+            logging.warning("⏳ Waiting for RC signal...")
+            await asyncio.sleep(1)
+
 async def check_armable(drone: System):
     logging.info("✅ Checking if drone is armable...")
     async for is_armed in drone.telemetry.armed():
@@ -58,9 +68,9 @@ async def main():
     drone = await connect_drone()
     await check_basic_health(drone)
     await check_gps_health(drone)
+    await check_rc_signal(drone)  # ➕ RC signal check added here
     await check_armable(drone)
     await arm_drone(drone)
 
 if __name__ == "__main__":
     asyncio.run(main())
-
