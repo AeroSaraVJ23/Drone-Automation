@@ -16,7 +16,7 @@ async def connect_drone():
             break
     return drone
 
-async def arm_and_takeoff(drone, target_altitude=2.0):
+async def arm_and_takeoff(drone, target_altitude=1.0):
     logging.info("🚀 Arming drone...")
     await drone.action.arm()
 
@@ -31,7 +31,7 @@ async def arm_and_takeoff(drone, target_altitude=2.0):
             break
         await asyncio.sleep(1)
 
-async def hold_position(drone, hold_duration=10):
+async def hold_position(drone, hold_duration=20):
     logging.info(f"⏸ Holding position for {hold_duration} seconds...")
     await asyncio.sleep(hold_duration)
     logging.info("✅ Hold complete.")
@@ -48,8 +48,8 @@ async def land_drone(drone):
 
 async def main():
     drone = await connect_drone()
-    await arm_and_takeoff(drone, target_altitude=2.0)  # Set altitude in meters
-    await hold_position(drone, hold_duration=10)       # Hold for 10 seconds
+    await arm_and_takeoff(drone, target_altitude=1.0)  
+    await hold_position(drone, hold_duration=20)       
     await land_drone(drone)
 
 if __name__ == "__main__":
