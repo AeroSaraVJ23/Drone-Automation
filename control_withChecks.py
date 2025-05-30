@@ -72,7 +72,7 @@ async def main():
     drone = await connect_drone()
     await check_basic_health(drone)
     await check_gps_health(drone)
-    await check_rc_signal(drone)  # ➕ RC signal check added here
+    await check_rc_signal(drone)  
     await check_armable(drone)
     await arm_drone(drone)
 
