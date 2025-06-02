@@ -132,14 +132,20 @@ async def build_mission_plan() -> MissionPlan:
             longitude_deg=lon,
             relative_altitude_m=alt,
             speed_m_s=2.0,
-            is_fly_through=False,  # Stop and hold
+            is_fly_through=False,
             gimbal_pitch_deg=0.0,
             gimbal_yaw_deg=0.0,
             camera_action=MissionItem.CameraAction.NONE,
-            loiter_time_s=hold_time
+            loiter_time_s=hold_time,
+            camera_photo_interval_s=0.0,  # No photo interval
+            acceptance_radius_m=1.0,      # Acceptable distance from WP
+            yaw_deg=0.0,                  # No specific yaw
+            camera_photo_distance_m=0.0,  # Not used
+            vehicle_action=MissionItem.VehicleAction.NONE
         ))
 
     return MissionPlan(mission_items)
+
   
 
 async def run_mission(drone: System):
