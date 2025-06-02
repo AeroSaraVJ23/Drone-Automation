@@ -116,9 +116,9 @@ async def monitor_status_text(drone: System):
 
 # Coordinates: (latitude, longitude, relative_altitude)
 WAYPOINTS = [
-    (47.397742, 8.545594, 10),  # WP1
-    (47.397842, 8.545694, 10),  # WP2
-    (47.397942, 8.545794, 10),  # WP3 - Final WP
+    (7.253035, 80.592398, 2),  # WP1
+    (7.253039, 80.592193, 2),  # WP2
+    (7.253035, 80.592398, 2),  # WP3 - Final WP
 ]
 
 async def build_mission_plan() -> MissionPlan:
