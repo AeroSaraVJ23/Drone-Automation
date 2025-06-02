@@ -158,19 +158,32 @@ async def run_mission(drone: System):
     logging.info("🚀 Arming drone...")
     await drone.action.arm()
 
+    await takeoff(drone, altitude=2.0)
+
     logging.info("🛫 Starting mission...")
     await drone.mission.start_mission()
 
-    async for mission_progress in drone.mission.mission_progress():
-        current = mission_progress.current
-        total = mission_progress.total
-        logging.info(f"📍 Mission progress: {current}/{total}")
-        if current == total:
+    while True:
+        async for mission_progress in drone.mission.mission_progress():
+            current = mission_progress.current
+            total = mission_progress.total
+            logging.info(f"📍 Mission progress: {current}/{total}")
+            break
+        if await drone.mission.is_mission_finished():
             break
         await asyncio.sleep(1)
 
     logging.info("🪂 Mission complete. Initiating landing...")
     await drone.action.land()
+
+    await asyncio.sleep(10)
+
+    async for is_armed in drone.telemetry.armed():
+        if is_armed:
+            logging.info("🔧 Disarming...")
+            await drone.action.disarm()
+        break
+
 
 
 
