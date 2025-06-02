@@ -192,7 +192,8 @@ async def main():
         print("5. Move left (roll -2m)")
         print("6. Move right (roll +2m)")
         print("7. Land")
-        print("8. Exit")
+        print("8.Mission")
+        print("9. Exit")
 
         choice = input("Enter choice: ")
 
