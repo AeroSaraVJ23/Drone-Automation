@@ -219,7 +219,9 @@ async def main():
         print("7. Land")
         print("8. Get GPS coordinates")
         print("9. Go to GPS location")
-        print("10. Exit")
+        print("10. Sensor Reading")
+        print("11. Image Capturing")
+        print("12. Exit")
 
         choice = input("Enter choice: ")
 
