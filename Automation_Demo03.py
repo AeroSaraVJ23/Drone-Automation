@@ -170,7 +170,7 @@ async def run_sensor_script():
     Asynchronously runs a predefined Python script and logs output/errors.
     """
     process = await asyncio.create_subprocess_shell(
-        "python3 sensor.py",  # Replace with actual script
+        "python3 /home/raspig11/Caputuring/BLE/client.py",  # Replace with actual script
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
@@ -190,7 +190,7 @@ async def run_camera_script():
     Asynchronously runs a predefined Python script and logs output/errors.
     """
     process = await asyncio.create_subprocess_shell(
-        "python3 imageCapture.py",  # Replace with actual script
+        "python3 /home/raspig11/Caputuring/Camera/capture3.py",  # Replace with actual script
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
