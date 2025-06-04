@@ -209,7 +209,17 @@ async def run_camera_script():
 # ================================
 # Failsafe
 # ================================
-async def wait_until_arrival(drone, target_lat, target_lon, threshold=0.00001):
+async def wait_until_arrival1(drone, target_lat = 7.2530242, target_lon = 80.5922737, threshold=0.00001):
+    logging.info("🕒 Waiting until drone reaches target location...")
+    async for position in drone.telemetry.position():
+        lat_diff = abs(position.latitude_deg - target_lat)
+        lon_diff = abs(position.longitude_deg - target_lon)
+        if lat_diff < threshold and lon_diff < threshold:
+            logging.info("📍 Arrived at destination.")
+            break
+        await asyncio.sleep(1)
+
+async def wait_until_arrival2(drone, target_lat = 7.2530244, target_lon = 80.5924079, threshold=0.00001):
     logging.info("🕒 Waiting until drone reaches target location...")
     async for position in drone.telemetry.position():
         lat_diff = abs(position.latitude_deg - target_lat)
