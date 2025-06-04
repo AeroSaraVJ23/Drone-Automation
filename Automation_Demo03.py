@@ -276,6 +276,7 @@ async def main():
     await arm_drone(drone)
     await takeoff(drone)
     await go_to_gps_location1(drone)
+    await run_camera_script()
     await go_to_gps_location2(drone)
     await land(drone)
 
