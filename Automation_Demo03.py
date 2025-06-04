@@ -3,6 +3,7 @@ import logging
 from mavsdk import System
 from mavsdk.offboard import VelocityNedYaw
 import subprocess
+import signal
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
@@ -233,6 +234,16 @@ async def wait_until_arrival2(drone, target_lat = 7.2530244, target_lon = 80.592
             logging.info("📍 Arrived at destination.")
             break
         await asyncio.sleep(1)
+
+
+
+def handle_sigint(*args):
+    logging.warning("❗ KeyboardInterrupt detected. Disarming...")
+    asyncio.create_task(drone.action.disarm())
+    exit(0)
+
+signal.signal(signal.SIGINT, handle_sigint)
+
 
 
 
