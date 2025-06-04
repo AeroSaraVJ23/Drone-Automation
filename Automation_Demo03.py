@@ -176,7 +176,7 @@ async def run_sensor_script():
     Asynchronously runs a predefined Python script and logs output/errors.
     """
     process = await asyncio.create_subprocess_shell(
-        "python3 /home/raspig11/Caputuring/BLE/client.py",  # Replace with actual script
+        "python3 /home/raspig11/Caputuring/BLE/DecodeUploader2.py",  # Replace with actual script
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
