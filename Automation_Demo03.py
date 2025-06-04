@@ -319,8 +319,9 @@ async def main():
     await go_to_gps_location1(drone)
     await wait_until_arrival1(drone)
     await run_camera_script()
-    await wait_until_arrival1(drone)
+    await run_sensor_script()
     await go_to_gps_location2(drone)
+    await wait_until_arrival2(drone)
     await land(drone)
 
 if __name__ == "__main__":
