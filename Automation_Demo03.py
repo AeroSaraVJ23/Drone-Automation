@@ -30,13 +30,18 @@ async def check_basic_health(drone: System):
             break
         await asyncio.sleep(1)
 
-async def check_gps_health(drone: System):
+async def check_gps_health(drone: System, timeout=30):
     logging.info("📡 Checking GPS and home position status...")
+    start = asyncio.get_event_loop().time()
     async for health in drone.telemetry.health():
         if health.is_global_position_ok and health.is_home_position_ok:
             logging.info("✅ GPS and home position OK.")
             break
+        if asyncio.get_event_loop().time() - start > timeout:
+            logging.error("❌ GPS check timed out.")
+            break
         await asyncio.sleep(1)
+
 
 async def check_rc_signal(drone: System):
     logging.info("🎮 Checking RC signal...")
