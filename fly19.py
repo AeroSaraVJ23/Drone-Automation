@@ -358,12 +358,13 @@ async def go_to_gps_location_land(drone: System , lat = 7.2530244 , lon=80.59240
 # ================================
 # Outside Data capturing - shell commands
 # ================================
-async def run_sensor_script():
+async def run_sensor_script(node_id, mac, char_uuid):
     """
     Asynchronously runs a predefined Python script and logs output/errors.
     """
+    command = f"python3 /home/raspig11/Caputuring/BLE/DecodeUploader3.py {node_id} {mac} {char_uuid}"
     process = await asyncio.create_subprocess_shell(
-        "python3 /home/raspig11/Caputuring/BLE/DecodeUploader2.py",  # Replace with actual script
+        command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
@@ -378,12 +379,13 @@ async def run_sensor_script():
         logging.error(f"Stdout: {stdout.decode()}")
         logging.error(f"Stderr: {stderr.decode()}")
 
-async def run_camera_script():
+async def run_camera_script(node_ID):
     """
     Asynchronously runs a predefined Python script and logs output/errors.
     """
+    command = f"python3 /home/raspig11/Caputuring/Camera/capture4.py {node_ID}"
     process = await asyncio.create_subprocess_shell(
-        "python3 /home/raspig11/Caputuring/Camera/capture3.py",  # Replace with actual script
+        command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
@@ -475,11 +477,11 @@ async def initially_start(drone):
 
 
 
-async def do_the_task(drone, nodeId, lat , long ):
+async def do_the_task(drone, nodeId, lat , long, mac, char_UUID ):
     await go_to_gps_location(drone, lat, long)
     await wait_until_arrival(drone, lat, long)
-    await run_camera_script()
-    await run_sensor_script()
+    await run_camera_script(nodeId)
+    await run_sensor_script(nodeId, mac, char_UUID)
 
 async def end_the_task(drone):
   await go_to_gps_location_land(drone)
@@ -492,7 +494,9 @@ async def full_task(drone, Node_List, lat, long):
 
     for node in Node_List:
       nodeID = nodes[0].get("nodeId")
-      await do_the_task(drone, nodeId, lat, long)
+      mac = nodes[0].get("mac_address")
+      char_UUID = nodes[0].get("char_UUID")
+      await do_the_task(drone, nodeId, lat, long, mac, char_UUID)
 
   
     await end_thetask(drone)
