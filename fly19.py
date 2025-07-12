@@ -488,14 +488,15 @@ async def end_the_task(drone):
   await wait_until_arrival_land(drone)
   await land(drone)
 
-async def full_task(drone, Node_List, lat, long):
+async def full_task(drone, Node_List):
     await basic_health_checks(drone)
     await initially_start(drone)
 
     for node in Node_List:
-      nodeID = nodes[0].get("nodeId")
+      nodeID = node[0].get("nodeId")
       mac = nodes[0].get("mac_address")
-      char_UUID = nodes[0].get("char_UUID")
+      char_UUID = node[0].get("char_UUID")
+      lat = node[]
       await do_the_task(drone, nodeId, lat, long, mac, char_UUID)
 
   
@@ -514,7 +515,7 @@ async def main():
     asyncio.create_task(monitor_status_text(drone))
 
     while True:
-      await full_task(drone)
+      await full_task(drone, Node_List)
       await asyncio.sleep(20)
       
 
