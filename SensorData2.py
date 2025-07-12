@@ -1,102 +1,83 @@
 import struct
-# Read the current state of a characteristic on a BLE device
 import asyncio
 from bleak import BleakClient
 import sys
 import requests
 
-def decode_soil_sensor_data(transmit_data):
+# URL and headers for sending data
+url = "https://skytimages.pagekite.me/sensor-readings"
+headers = {
+    "Authorization": "Bearer z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2h1g0f9e8d7c6b5a4",
+    "Content-Type": "application/json"
+}
 
-    # Ensure input is bytes
+# ✅ Decoding function
+def decode_soil_sensor_data(transmit_data):
     if not isinstance(transmit_data, bytes):
         transmit_data = bytes(transmit_data)
 
-    # Check if the data length is correct
     if len(transmit_data) != 12:
         raise ValueError("Transmit data must be 12 bytes long")
 
-    # Decode temperature (2 bytes)
     temperature = struct.unpack('>h', transmit_data[0:2])[0] / 10.0
-
-    # Decode pH (2 bytes)
     ph = struct.unpack('>h', transmit_data[2:4])[0] / 10.0
-
-    # Decode Nitrogen (2 bytes)
     nitrogen = struct.unpack('>H', transmit_data[4:6])[0]
-
-    # Decode Phosphorus (2 bytes)
     phosphorus = struct.unpack('>H', transmit_data[6:8])[0]
-
-    # Decode Potassium (2 bytes)
     potassium = struct.unpack('>H', transmit_data[8:10])[0]
+    dht_humidity = struct.unpack('>h', transmit_data[10:12])[0] * 0.1
 
-    # Decode DHT11 Humidity (2 bytes)
-    dht_humidity = struct.unpack('>h', transmit_data[10:12])[0]*0.1
-
-    # Return decoded values as a dictionary
     return {
         'Temperature °C': temperature,
         'pH': ph,
         'Nitrogen (mg/kg)': nitrogen,
         'Phosphorus (mg/kg)': phosphorus,
         'Potassium (mg/kg)': potassium,
-        'Air Humidity (Relative Humidity %)': dht_humidityong")
+        'Air Humidity (Relative Humidity %)': dht_humidity
     }
 
-# Example
-example_transmit_data = [
-        0x1, 0x10,   # Temperature: 27.2°C
-        0x00, 0x28,   # pH: 4.0
-        0x00, 0x55,   # Nitrogen: 85 mg/kg
-        0x00, 0xF4,   # Phosphorus: 244 mg/kg
-        0x00, 0xEE,   # Potassium: 238 mg/kg
-        0x00, 0x0A    # DHT Relative Humidity: 10.0%
-]
+# ✅ BLE reading and HTTP POST
+async def get_data(mac, char_uuid, node_id):
+    decoded_data = {}
 
+    try:
+        async with BleakClient(mac) as client:
+            data = await client.read_gatt_char(char_uuid)
+            decoded_data = decode_soil_sensor_data(data)
+            print("[DEBUG] Decoded data:", decoded_data)
+    except Exception as e:
+        print(f"[ERROR] Failed to read from BLE device: {e}")
+        return
 
-url = "https://skytimages.pagekite.me//sensor-readings"
+    payload = {
+        "nodeId": node_id,
+        "temperature": decoded_data['Temperature °C'],
+        "humidity": decoded_data['Air Humidity (Relative Humidity %)'],
+        "ph": decoded_data['pH'],
+        "n": decoded_data['Nitrogen (mg/kg)'],
+        "p": decoded_data['Phosphorus (mg/kg)'],
+        "k": decoded_data['Potassium (mg/kg)'],
+        "battery": 95  # You can replace with actual reading
+    }
 
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        print("[INFO] Status code:", response.status_code)
+        print("[INFO] Response:", response.text)
+    except Exception as e:
+        print(f"[ERROR] Failed to send POST request: {e}")
 
-headers = {
-    "Authorization": "Bearer z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2h1g0f9e8d7c6b5a4",
-    "Content-Type": "application/json"
-}
-
-
-async def get_data(MAC, char_UUID, nodeId):
-  ble_address = MAC
-  characteristic_uuid = char_UUID
-
-  decoded_data = {}
-  async with BleakClient(ble_address) as client:
-      data = await client.read_gatt_char(characteristic_uuid)
-
-      decoded_data = decode_soil_sensor_data (data)
-
-      print(decoded_data)
-
-  payload ={
-      "nodeId":nodeId,
-      "temperature": decoded_data['Temperature °C'],
-      "humidity": decoded_data['Air Humidity (Relative Humidity %)'],
-      "ph": decoded_data['pH'],
-      "n": decoded_data['Nitrogen (mg/kg)'],
-      "p":decoded_data['Phosphorus (mg/kg)'],
-      "k": decoded_data['Potassium (mg/kg)'],
-      "battery":95
-  }
-  response = requests.post(url, json=payload, headers=headers)
-  print("Status code:", response.status_code)
-  print("Response:", response.text)
-  
-
-async def get_args_And_Send_data():
-  node_Id = Argv[0]
-  MAC = Argv[1]
-  char_UUID = Argv[2]
-  await get_data()  
-
+# ✅ Argument extraction and run
 async def main():
-    get_data()
+    if len(sys.argv) != 4:
+        print("Usage: python script.py <node_id> <MAC> <char_UUID>")
+        return
 
-asyncio.run(main())
+    node_id = sys.argv[1]
+    mac = sys.argv[2]
+    char_uuid = sys.argv[3]
+
+    await get_data(mac, char_uuid, node_id)
+
+# ✅ Entry point
+if __name__ == "__main__":
+    asyncio.run(main())
