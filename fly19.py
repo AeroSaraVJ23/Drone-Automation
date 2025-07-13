@@ -25,9 +25,9 @@ def get_task(Drone_ID=0):
 
     if response.status_code == 200:
         task = response.json()
-        print("Received task:", task)
-        Task_ID = task.get("taskId", 0)
-        Drone_ID = task.get("droneId", 0)
+        #print("Received task:", task)
+        #Task_ID = task.get("taskId", 0)
+        #Drone_ID = task.get("droneId", 0)
         #print("Task ID:", Task_ID)
         #print("Drone ID:", Drone_ID)
 
@@ -132,22 +132,34 @@ def get_first_available_task(Drone_ID):
 
 
 ############
-#DEcoding the Json to Nodes 
+#Decoding the Json to Nodes 
 ############
 
 def get_nodes_from_task(drone_Id):
 
-    task = filter_task_by_drone_id(drone_Id)
+    try:
+        task = filter_task_by_drone_id(drone_Id)
+    except Exception as e:
+        logging.error("Error fetching task :", e)
+        print("Error fetching task:", e)
+        return None
 
     if task:
         lot = task.get("lots")
         if lot and len(lot) > 0:
             nodes = lot[0].get("nodes")
             if nodes and len(nodes) > 0:
-                return nodes
+                task_id = task.get("taskId", 0)
+                return nodes, task_id
             else:
                 print("No nodes available in the lot.")
                 return None
+        else:
+            print("No lots available in the task.")
+            return None
+    else:
+        print("No task available for the given drone ID.")
+        return None
     
     
 
@@ -159,6 +171,9 @@ from mavsdk.offboard import VelocityNedYaw
 import subprocess
 import signal
 
+
+#Default Task ID
+Task_ID = 0
 #Drone ID
 Drone_ID = "14"
 #Node List
@@ -452,44 +467,56 @@ signal.signal(signal.SIGINT, handle_sigint)
 # Do a task
 # ================================
 
-
+# This function performs basic health checks before starting the task
 async def basic_health_checks(drone):
     await check_basic_health(drone)
     await check_gps_health(drone)
     await check_rc_signal(drone)
     await check_armable(drone)
 
-
+# This function performs the initial setup before starting the task
 async def initially_start(drone):
     await arm_drone(drone)
     await takeoff(drone)
 
 
-
+# This function performs the main task of going to a GPS location, running camera and sensor scripts
 async def do_the_task(drone, nodeId, lat , long, mac, char_UUID ):
     await go_to_gps_location(drone, lat, long)
     await wait_until_arrival(drone, lat, long)
+    logging.info(f"📍 Reached Node {nodeId} at Latitude={lat}, Longitude={long}")
+
+    # For stable capture, we can wait for a few seconds
+    await asyncio.sleep(5)
     await run_camera_script(nodeId)
+    logging.info(f"📷 Camera script executed for Node {nodeId}")
+    # Wait for a 2 seconds before running the sensor script
+    await asyncio.sleep(2)
+    logging.info(f"🔍 Running sensor script for Node {nodeId} with MAC={mac} and UUID={char_UUID}")
     await run_sensor_script(nodeId, mac, char_UUID)
 
+# This function performs the final task of landing the drone
 async def end_the_task(drone):
-  await go_to_gps_location_land(drone)
-  await wait_until_arrival_land(drone)
-  await land(drone)
+    await go_to_gps_location_land(drone)
+    await wait_until_arrival_land(drone)
+    await land(drone)
 
+# This function combines all the steps to perform the full task
 async def full_task(drone, Node_List):
     await basic_health_checks(drone)
     await initially_start(drone)
 
+    # Loop through each node in the Node_List and perform the task
     for node in Node_List:
-      nodeID = node[0].get("nodeId")
-      mac = nodes[0].get("mac_address")
-      char_UUID = node[0].get("char_UUID")
-      lat = node[]
-      await do_the_task(drone, nodeId, lat, long, mac, char_UUID)
+      nodeID = node.get("nodeId")
+      mac = node.get("mac_address")
+      char_UUID = node.get("char_UUID")
+      lat = node.get("lat")
+      long = node.get("lng")
+      await do_the_task(drone, nodeID, lat, long, mac, char_UUID)
 
   
-    await end_thetask(drone)
+    await end_the_task(drone)
 
 
 
@@ -504,23 +531,43 @@ async def main():
     asyncio.create_task(monitor_status_text(drone))
 
     while True:
+    
+      logging.info("🔄 Checking for new tasks...")
+      # Fetch the node list
+      Node_List, Task_ID = get_nodes_from_task("14")
       
-      #Fetch the node list
-      Node_List = get_nodes_from_task("14")
 
       #Check if the Node list is empty
-      if not Node_List:
-        #If not empty
-        #Do the mission
+      if Node_List:
+        # If not empty
+        logging.info(f"✅ New task found with ID: {Task_ID}")
+        # Accept the task
+        accepting_task(Task_ID)
+        # Log the task ID and number of nodes to visit
+        logging.info(f"📋 Task ID: {Task_ID} - Nodes to visit: {len(Node_List)}")
+        # Do the mission
         await full_task(drone, Node_List)
+      
+      else :
+        # If empty
+        logging.info("❌ No new tasks found. Waiting for new tasks...")
+        # wait for 20 seconds before checking again
+        logging.info("⏳ Waiting for 20 seconds before checking for new tasks...")
+        await asyncio.sleep(20)
+        # skip the rest of the loop 
+        continue
 
+      #Inform the server that the task is completed
+      logging.info(f"✅ Task {Task_ID} completed. Informing server...")  
+      complete_task(Task_ID)
       #wait for 20 seconds before checking again
       logging.info("⏳ Waiting for 20 seconds before checking for new tasks...")
       await asyncio.sleep(20)
       
-      #Clear the Node List
-      logging.info("🔄 Clearing Node List for next iteration...")
+      #Clear the Node List and Task_ID for the next iteration
+      logging.info("🔄 Clearing Node List and TaskId for next iteration...")
       Node_List.clear()
+      Task_ID = 0
       
 
 if __name__ == "__main__":
