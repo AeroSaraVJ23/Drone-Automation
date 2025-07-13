@@ -152,17 +152,6 @@ def get_nodes_from_task(drone_Id):
     
 
 
-
-
-
-# Call the function to get the task
-get_first_available_task("14")
-
-
-
-
-
-
 import asyncio
 import logging
 from mavsdk import System
@@ -515,8 +504,23 @@ async def main():
     asyncio.create_task(monitor_status_text(drone))
 
     while True:
-      await full_task(drone, Node_List)
+      
+      #Fetch the node list
+      Node_List = get_nodes_from_task("14")
+
+      #Check if the Node list is empty
+      if not Node_List:
+        #If not empty
+        #Do the mission
+        await full_task(drone, Node_List)
+
+      #wait for 20 seconds before checking again
+      logging.info("⏳ Waiting for 20 seconds before checking for new tasks...")
       await asyncio.sleep(20)
+      
+      #Clear the Node List
+      logging.info("🔄 Clearing Node List for next iteration...")
+      Node_List.clear()
       
 
 if __name__ == "__main__":
